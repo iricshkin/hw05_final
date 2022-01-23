@@ -1,11 +1,11 @@
 {% extends "base.html" %} 
-{% load cache %} 
+
 {% block title %}
-<title>Лента постов избранный авторов</title>
+<title>Лента постов избранных авторов</title>
 {% endblock %} 
-{% block header %}Лента постов{% endblock %}
+{% block header %}Лента постов избранных авторов{% endblock %}
 {%block content %}
-<h1>Лента постов</h1>
+<h1>Лента постов избранных авторов</h1>
 <main>
   {% include "posts/includes/switcher.html" %}
   {% for post in page_obj %} 

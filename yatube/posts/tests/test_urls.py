@@ -47,7 +47,6 @@ class PostModelTest(TestCase):
         for url in url_names:
             with self.subTest(url=url):
                 response = self.guest_client.get(url)
-                print(response, url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
 
     def test_error_page_url_exists_at_desired_location(self):
@@ -58,14 +57,19 @@ class PostModelTest(TestCase):
         self.assertTemplateUsed(response, "core/404.html")
 
     # Проверяем доступность страниц для авторизованного пользователя
-    def test_post_create_edit_url_exists_at_desired_location_authorized(self):
+    def test_post_url_exists_at_desired_location_authorized(self):
         """
-        Страницы /create/ и /posts/<post_id>/edit/ доступны авторизованному
+        Страницы create/, posts/<post_id>/edit/, posts/<int:post_id>/comment,
+        follow/,profile/<str:username>/follow/ и
+        profile/<str:username>/unfollow/ доступны авторизованному
         пользователю.
         """
         url_names = (
             reverse_lazy("posts:post_create"),
             # reverse_lazy("posts:post_edit", args=[self.post.pk]),
+            reverse_lazy("posts:follow_index"),
+            reverse_lazy("posts:profile_follow", args=[self.user.username]),
+            reverse_lazy("posts:profile_unfollow", args=[self.user.username]),
         )
         for url in url_names:
             with self.subTest(url=url):
@@ -90,6 +94,13 @@ class PostModelTest(TestCase):
             #    "posts:post_edit", args=[self.post.pk]
             # ): "posts/create_post.html",
             reverse_lazy("posts:post_create"): "posts/create_post.html",
+            reverse_lazy("posts:follow_index"): "posts/follow.html",
+            reverse_lazy(
+                "posts:profile_follow", args=[self.user.username]
+            ): "posts/follow.html",
+            reverse_lazy(
+                "posts:profile_unfollow", args=[self.user.username]
+            ): "posts/follow.html",
         }
         for url, template in url_names_template.items():
             with self.subTest(url=url):

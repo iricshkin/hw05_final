@@ -92,14 +92,19 @@ class Follow(CreatedModel):
         User,
         on_delete=models.CASCADE,
         related_name="follower",
-        verbose_name="Пользователь",
+        verbose_name="Подписчик",
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name="following",
-        verbose_name="Автор",
+        verbose_name="Избранный автор",
     )
 
-    def __str__(self):
-        return f"{self.user} follows {self.author}"
+    class Meta:
+        ordering = ("-created",)
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
+
+    def __str__(self) -> str:
+        return f"{self.user} подписан на {self.author}"

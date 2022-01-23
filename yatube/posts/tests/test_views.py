@@ -57,7 +57,7 @@ class PostViewTest(TestCase):
             b"\x02\x00\x01\x00\x00\x02\x02\x0C"
             b"\x0A\x00\x3B"
         )
-        cls.uploaded = SimpleUploadedFile(
+        uploaded = SimpleUploadedFile(
             name="small.gif",
             content=small_gif,
             content_type="image/gif",
@@ -67,7 +67,7 @@ class PostViewTest(TestCase):
                 author=cls.user_2,
                 text="Текст поста %s" % post_num,
                 group=cls.group_2,
-                image=cls.uploaded,
+                image=uploaded,
             )
             for post_num in range(NUMBER_OF_POSTS, NUMBER_OF_POSTS + 1)
         )
@@ -240,11 +240,10 @@ class PostViewTest(TestCase):
             ).exists()
         )
 
-    def test_post_with_group_and_image_show_correct_pages(self):
+    def test_post_with_group_and_image_show_prodile_pages(self):
         """
-        Новый пост с указанной группой и картинкой попадает на нужные страницы.
+        Новый пост с указанной группой и картинкой попадает страницу профайла.
         """
-        # Пост на странице профиля пользователя
         response = self.guest_client.get(
             reverse("posts:profile", kwargs={"username": self.user_2.username})
         )
@@ -255,7 +254,12 @@ class PostViewTest(TestCase):
         self.assertEqual(post_text_0, "Текст поста 14")
         self.assertEqual(post_author_0, self.user_2.username)
         self.assertEqual(post_image_0, "posts/small.gif")
-        # Пост на странице выбранной группы
+
+    def test_post_with_group_and_image_show_group_pages(self):
+        """
+        Новый пост с указанной группой и картинкой попадает на страницу
+        выбранной группы.
+        """
         response = self.guest_client.get(
             reverse("posts:group_list", kwargs={"slug": self.group_2.slug})
         )
@@ -263,7 +267,14 @@ class PostViewTest(TestCase):
         post_group_0 = first_object.group.title
         post_image_0 = first_object.image.name
         self.assertEqual(post_group_0, "Вторая тестовая группа")
-        # Отдельная страница поста
+        self.assertIsNot(post_group_0, "Первая тестовая группа")
+        self.assertEqual(post_image_0, "posts/small.gif")
+
+    def test_post_with_group_and_image_show_post_detail_pages(self):
+        """
+        Новый пост с указанной группой и картинкой попадает на страницу
+        выбранного поста.
+        """
         response = self.guest_client.get(
             reverse("posts:post_detail", kwargs={"post_id": "14"})
         )
@@ -297,9 +308,6 @@ class CommentViewTest(TestCase):
     def setUp(self):
         # Создаем неавторизованный клиент
         self.guest_client = Client()
-        # Создаем авторизованый клиент
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
 
     def test_add_comment_post(self):
         """Шаблон post_detail сформирован с правильным контекстом."""
