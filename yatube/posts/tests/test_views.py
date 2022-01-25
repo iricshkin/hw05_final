@@ -9,7 +9,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
-from ..models import Comment, Group, Post
+from ..models import Comment, Follow, Group, Post
 
 User = get_user_model()
 
@@ -346,3 +346,54 @@ class PostCacheTest(TestCase):
         response = self.guest_client.get(reverse("posts:index"))
         self.assertEqual(Post.objects.count(), posts_count - 1)
         self.assertIn(cache_content, response.content)
+
+
+class FollowTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.user = User.objects.create_user(username="auth")
+        cls.following = User.objects.create_user(username="following")
+        cls.unfollowing = User.objects.create_user(username="unfollowing")
+
+    def setUp(self):
+        # Создаем авторизованый клиент
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+
+    def test_auth_follow(self):
+        """Авторизованный пользователь может подписываться на других
+        пользователей и удалять подписки.
+        """
+        self.authorized_client.get(
+            reverse("posts:profile_follow"),
+            kwargs={"username": self.following},
+        )
+        self.assertIs(
+            Follow.objects.filter(
+                user=self.user, author=self.following
+            ).exists(),
+            True,
+        )
+        self.authorized_client.get(
+            reverse("posts:profile_follow"),
+            kwargs={"username": self.following.username},
+        )
+        self.assertIs(
+            Follow.objects.filter(
+                user=self.user, author=self.following
+            ).exists(),
+            False,
+        )
+
+    def test_new_post_following_author(self):
+        """Новая запись пользователя будет в ленте у тех кто на него
+        подписан и не будет у тех кто не подписан на него.
+        """
+        Follow.objects.create(user=self.user, author=self.following)
+        post = Post.objects.create(author=self.following, text="New text")
+        response = self.authorized_client.get(reverse("posts:follow_index"))
+        self.assertIn(post, response.context["page_obj"][0])
+        self.client.login(username=self.unfollowing)
+        response = self.aclient.get(reverse("posts:follow_index"))
+        self.assertNotIn(post, response.context["page_obj"][0])

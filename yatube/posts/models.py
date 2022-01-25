@@ -2,6 +2,8 @@ from core.models import CreatedModel
 from django.contrib.auth import get_user_model
 from django.db import models
 
+# from django.db.models import Q
+
 User = get_user_model()
 
 
@@ -105,6 +107,9 @@ class Follow(CreatedModel):
         ordering = ("-created",)
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
+        unique_together = ("author", "user")
 
     def __str__(self) -> str:
         return f"{self.user} подписан на {self.author}"
+
+    # return f"{self.user}"

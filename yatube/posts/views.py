@@ -1,7 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import (
     get_list_or_404,
     get_object_or_404,
@@ -48,7 +48,9 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
     """Страница профиля."""
     author = get_object_or_404(User, username=username)
     posts_author = author.posts.all()
-    following = author.following.all()
+    following = False
+    if request.user in author.following.all():
+        following = True
     paginator = Paginator(posts_author, POST_PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -56,8 +58,8 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
     context = {
         "author": author,
         "posts_author": posts_author,
-        "following": following,
         "page_obj": page_obj,
+        "following": following,
     }
     return render(request, template, context)
 
@@ -145,8 +147,8 @@ def follow_index(request: HttpRequest) -> HttpResponse:
     """
     Страница всех постов авторов, на которых подписан текущий пользователь.
     """
-    follower = get_object_or_404(User, username=request.user)
-    author = Follow.objects.filter(user=follower).values("author")
+    current_user = get_object_or_404(User, username=request.user)
+    author = Follow.objects.filter(user=current_user).values("author")
     posts = Post.objects.filter(author__in=author)
     paginator = Paginator(posts, POST_PER_PAGE)
     page_number = request.GET.get("page")
@@ -161,39 +163,17 @@ def follow_index(request: HttpRequest) -> HttpResponse:
 @login_required
 def profile_follow(request: HttpRequest, username: str) -> HttpResponse:
     # Подписаться на автора
-    follower = get_object_or_404(User, username=request.user)
-    following = get_object_or_404(User, username=username)
-    # follow_list = Follow.objects.filter(user=follower).values("author")
-    if follower != following:
-        # if not Follow.objects.filter(user=follower).exists():
-        if follower not in following.follower.all():
-            Follow.objects.filter(user=follower).create(
-                author=following, user=follower
-            )
-    posts = Post.objects.filter(author=following)
-    paginator = Paginator(posts, POST_PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-    template = "posts/follow.html"
-    context = {
-        "page_obj": page_obj,
-    }
-    return render(request, template, context)
+    current_user = request.user
+    author = get_object_or_404(User, username=username)
+    if author != current_user:
+        Follow.objects.get_or_create(user=current_user, author=author)
+        return redirect("posts:profile", username=username)
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
 @login_required
 def profile_unfollow(request: HttpRequest, username: str) -> HttpResponse:
     # Дизлайк, отписка
-    follower = get_object_or_404(User, username=request.user)
-    following = get_object_or_404(User, username=username)
-    if follower not in following.follower.all():
-        Follow.objects.filter(author=following, user=follower).delete()
-    posts = Post.objects.filter(author=following)
-    paginator = Paginator(posts, POST_PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-    template = "posts/follow.html"
-    context = {
-        "page_obj": page_obj,
-    }
-    return render(request, template, context)
+    current_user = request.user
+    Follow.objects.get(user=current_user, author__username=username).delete()
+    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
