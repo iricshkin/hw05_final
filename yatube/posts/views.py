@@ -2,12 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
-from django.shortcuts import (
-    get_list_or_404,
-    get_object_or_404,
-    redirect,
-    render,
-)
+from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import CommentForm, PostForm
 from .models import Follow, Group, Post
@@ -32,7 +27,7 @@ def index(request: HttpRequest) -> HttpResponse:
 def group_posts(request: HttpRequest, slug: str) -> HttpResponse:
     """Страница группы."""
     group = get_object_or_404(Group, slug=slug)
-    post_list = get_list_or_404(Post, group=group)
+    post_list = group.posts.all()
     paginator = Paginator(post_list, POST_PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -48,9 +43,7 @@ def profile(request: HttpRequest, username: str) -> HttpResponse:
     """Страница профиля."""
     author = get_object_or_404(User, username=username)
     posts_author = author.posts.all()
-    following = False
-    if request.user in author.following.all():
-        following = True
+    following = author.following.all().exists()
     paginator = Paginator(posts_author, POST_PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -175,5 +168,8 @@ def profile_follow(request: HttpRequest, username: str) -> HttpResponse:
 def profile_unfollow(request: HttpRequest, username: str) -> HttpResponse:
     # Дизлайк, отписка
     current_user = request.user
-    Follow.objects.get(user=current_user, author__username=username).delete()
+    author = get_object_or_404(User, username=username)
+    if author == current_user:
+        return redirect("posts:profile", username=username)
+    Follow.objects.get(user=current_user, author__username=author).delete()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))

@@ -40,7 +40,7 @@ class PostModelTest(TestCase):
         """
         url_names = (
             reverse_lazy("posts:index"),
-            # reverse_lazy("posts:group_list", args=[self.group.slug]),
+            reverse_lazy("posts:group_list", args=[self.group.slug]),
             reverse_lazy("posts:profile", args=[self.user.username]),
             reverse_lazy("posts:post_detail", args=[self.post.pk]),
         )
@@ -66,10 +66,7 @@ class PostModelTest(TestCase):
         """
         url_names = (
             reverse_lazy("posts:post_create"),
-            # reverse_lazy("posts:post_edit", args=[self.post.pk]),
             reverse_lazy("posts:follow_index"),
-            reverse_lazy("posts:profile_follow", args=[self.user.username]),
-            reverse_lazy("posts:profile_unfollow", args=[self.user.username]),
         )
         for url in url_names:
             with self.subTest(url=url):
@@ -81,26 +78,17 @@ class PostModelTest(TestCase):
         """URL-адрес использует соответствующий шаблон."""
         url_names_template = {
             reverse_lazy("posts:index"): "posts/index.html",
-            # reverse_lazy(
-            #    "posts:group_list", args=[self.group.slug]
-            # ): "posts/group_list.html",
+            reverse_lazy(
+                "posts:group_list", args=[self.group.slug]
+            ): "posts/group_list.html",
             reverse_lazy(
                 "posts:profile", args=[self.user.username]
             ): "posts/profile.html",
             reverse_lazy(
                 "posts:post_detail", args=[self.post.pk]
             ): "posts/post_detail.html",
-            # reverse_lazy(
-            #    "posts:post_edit", args=[self.post.pk]
-            # ): "posts/create_post.html",
             reverse_lazy("posts:post_create"): "posts/create_post.html",
             reverse_lazy("posts:follow_index"): "posts/follow.html",
-            reverse_lazy(
-                "posts:profile_follow", args=[self.user.username]
-            ): "posts/follow.html",
-            reverse_lazy(
-                "posts:profile_unfollow", args=[self.user.username]
-            ): "posts/follow.html",
         }
         for url, template in url_names_template.items():
             with self.subTest(url=url):

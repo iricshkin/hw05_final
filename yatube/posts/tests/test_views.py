@@ -352,36 +352,70 @@ class FollowTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username="auth")
-        cls.following = User.objects.create_user(username="following")
-        cls.unfollowing = User.objects.create_user(username="unfollowing")
+        cls.user_follower = User.objects.create_user(username="follower")
+        cls.user_unfollower = User.objects.create_user(username="unfollower")
+        cls.user_author = User.objects.create_user(username="author")
+        cls.group = Group.objects.create(
+            title="Подписки",
+            slug="following",
+            description="Тестовое описания подписок",
+        )
+        cls.post = Post.objects.create(
+            author=cls.user_author,
+            text="Текст поста подписок",
+            group=cls.group,
+        )
 
     def setUp(self):
-        # Создаем авторизованый клиент
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+        self.client_user = Client()
+        self.client_user.force_login(self.user_follower)
+        self.client_author = Client()
+        self.client_author.force_login(self.user_author)
 
-    def test_auth_follow(self):
+    def test_follow_and_unfollow_authorized_client(self):
         """Авторизованный пользователь может подписываться на других
         пользователей и удалять подписки.
         """
-        self.authorized_client.get(
-            reverse("posts:profile_follow"),
-            kwargs={"username": self.following},
+        # Подписка
+        follow_count = Follow.objects.count()
+        response = self.client_user.post(
+            reverse(
+                "posts:profile_follow",
+                kwargs={"username": self.user_author.username},
+            )
         )
+        self.assertRedirects(
+            response,
+            reverse(
+                "posts:profile", kwargs={"username": self.user_author.username}
+            ),
+        )
+        self.assertEqual(Follow.objects.count(), follow_count + 1)
         self.assertIs(
             Follow.objects.filter(
-                user=self.user, author=self.following
+                user=self.user_follower, author=self.user_author
             ).exists(),
             True,
         )
-        self.authorized_client.get(
-            reverse("posts:profile_follow"),
-            kwargs={"username": self.following.username},
+        # Удаление подписки
+        follow_count = Follow.objects.count()
+        response = self.client_user.post(
+            reverse(
+                "posts:profile_unfollow",
+                kwargs={"username": self.user_author.username},
+            )
         )
+        self.assertRedirects(
+            response,
+            reverse(
+                "posts:profile", kwargs={"username": self.user_author.username}
+            ),
+        )
+        self.assertEqual(Follow.objects.count(), follow_count - 1)
+
         self.assertIs(
             Follow.objects.filter(
-                user=self.user, author=self.following
+                user=self.user_follower, author=self.user_author
             ).exists(),
             False,
         )
@@ -390,10 +424,12 @@ class FollowTest(TestCase):
         """Новая запись пользователя будет в ленте у тех кто на него
         подписан и не будет у тех кто не подписан на него.
         """
-        Follow.objects.create(user=self.user, author=self.following)
-        post = Post.objects.create(author=self.following, text="New text")
-        response = self.authorized_client.get(reverse("posts:follow_index"))
-        self.assertIn(post, response.context["page_obj"][0])
-        self.client.login(username=self.unfollowing)
-        response = self.aclient.get(reverse("posts:follow_index"))
-        self.assertNotIn(post, response.context["page_obj"][0])
+        Follow.objects.create(user=self.user_follower, author=self.user_author)
+        post = Post.objects.create(
+            author=self.user_author, text="Текст поста подписок new"
+        )
+        response = self.client_user.get(reverse("posts:follow_index"))
+        self.assertIn(post, response.context["page_obj"])
+        self.client.login(username=self.user_unfollower)
+        response = self.client.get(reverse("posts:follow_index"))
+        self.assertNotEqual(post, response.context)
