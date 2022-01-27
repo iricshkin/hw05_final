@@ -40,9 +40,13 @@ class PostModelTest(TestCase):
         """
         url_names = (
             reverse_lazy("posts:index"),
-            reverse_lazy("posts:group_list", args=[self.group.slug]),
-            reverse_lazy("posts:profile", args=[self.user.username]),
-            reverse_lazy("posts:post_detail", args=[self.post.pk]),
+            reverse_lazy("posts:group_list", kwargs={"slug": self.group.slug}),
+            reverse_lazy(
+                "posts:profile", kwargs={"username": self.user.username}
+            ),
+            reverse_lazy(
+                "posts:post_detail", kwargs={"post_id": self.post.pk}
+            ),
         )
         for url in url_names:
             with self.subTest(url=url):
@@ -60,9 +64,7 @@ class PostModelTest(TestCase):
     def test_post_url_exists_at_desired_location_authorized(self):
         """
         Страницы create/, posts/<post_id>/edit/, posts/<int:post_id>/comment,
-        follow/,profile/<str:username>/follow/ и
-        profile/<str:username>/unfollow/ доступны авторизованному
-        пользователю.
+        follow/ доступны авторизованному пользователю.
         """
         url_names = (
             reverse_lazy("posts:post_create"),
@@ -79,13 +81,13 @@ class PostModelTest(TestCase):
         url_names_template = {
             reverse_lazy("posts:index"): "posts/index.html",
             reverse_lazy(
-                "posts:group_list", args=[self.group.slug]
+                "posts:group_list", kwargs={"slug": self.group.slug}
             ): "posts/group_list.html",
             reverse_lazy(
-                "posts:profile", args=[self.user.username]
+                "posts:profile", kwargs={"username": self.user.username}
             ): "posts/profile.html",
             reverse_lazy(
-                "posts:post_detail", args=[self.post.pk]
+                "posts:post_detail", kwargs={"post_id": self.post.pk}
             ): "posts/post_detail.html",
             reverse_lazy("posts:post_create"): "posts/create_post.html",
             reverse_lazy("posts:follow_index"): "posts/follow.html",

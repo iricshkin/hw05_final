@@ -172,4 +172,4 @@ def profile_unfollow(request: HttpRequest, username: str) -> HttpResponse:
     if author == current_user:
         return redirect("posts:profile", username=username)
     Follow.objects.get(user=current_user, author__username=author).delete()
-    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+    return redirect("posts:profile", username=username)

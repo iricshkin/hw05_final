@@ -5,6 +5,7 @@ from itertools import islice
 from django import forms
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
@@ -103,9 +104,6 @@ class PostViewTest(TestCase):
             reverse("posts:post_detail", kwargs={"post_id": "1"}): (
                 "posts/post_detail.html"
             ),
-            reverse("posts:post_edit", kwargs={"post_id": "1"}): (
-                "posts/create_post.html"
-            ),
             reverse("posts:post_create"): "posts/create_post.html",
         }
         for reverse_name, template in templates_page_names.items():
@@ -125,8 +123,8 @@ class PostViewTest(TestCase):
         # Проверка: количество постов на первой странице равно 10.
         self.assertEqual(len(response.context["page_obj"]), 10)
 
-    def test_second_page_index_contains_three_records(self):
-        # Проверка: на второй странице должно быть три поста.
+    def test_second_page_index_contains_four_records(self):
+        # Проверка: на второй странице должно быть четыре поста.
         response = self.guest_client.get(reverse("posts:index") + '?page=2')
         self.assertEqual(len(response.context["page_obj"]), 4)
 
@@ -216,30 +214,6 @@ class PostViewTest(TestCase):
                 # указанного класса
                 self.assertIsInstance(form_field, expected)
 
-    def test_edit_post_pages_show_correct_context(self):
-        """Шаблон edit_post сформирован с правильным контекстом."""
-        response = self.authorized_client.get(
-            reverse("posts:post_edit", kwargs={"post_id": "1"})
-        )
-        form_fields = {
-            "text": forms.fields.CharField,
-            "group": forms.fields.ChoiceField,
-            "image": forms.fields.ImageField,
-        }
-        # Проверяем, что типы полей формы в словаре context
-        # соответствуют ожиданиям
-        for value, expected in form_fields.items():
-            with self.subTest(value=value):
-                form_field = response.context["form"].fields[value]
-                # Проверяет, что поле формы является экземпляром
-                # указанного класса
-                self.assertIsInstance(form_field, expected)
-        self.assertTrue(
-            Post.objects.filter(
-                pk="1",
-            ).exists()
-        )
-
     def test_post_with_group_and_image_show_prodile_pages(self):
         """
         Новый пост с указанной группой и картинкой попадает страницу профайла.
@@ -306,20 +280,27 @@ class CommentViewTest(TestCase):
         )
 
     def setUp(self):
-        # Создаем неавторизованный клиент
-        self.guest_client = Client()
+        # Создаем авторизованый клиент
+        self.user = User.objects.create_user(username="leo")
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
 
     def test_add_comment_post(self):
-        """Шаблон post_detail сформирован с правильным контекстом."""
-        response = self.guest_client.get(
-            reverse("posts:add_comment", kwargs={"post_id": self.post.pk})
+        """Шаблон comment сформирован с правильным контекстом."""
+        comment_form_field = {"text": forms.fields.CharField}
+        response = self.authorized_client.get(
+            reverse(
+                "posts:post_detail",
+                kwargs={"post_id": "1"},
+            )
         )
+        comment_form = response.context["form"].fields["text"]
+        self.assertIsInstance(comment_form, comment_form_field["text"])
         self.assertTrue(
             Comment.objects.filter(
                 text="Комментарий",
             ).exists()
         )
-        self.assertEqual(response.text, self.comment.text)
 
 
 class PostCacheTest(TestCase):
@@ -346,6 +327,10 @@ class PostCacheTest(TestCase):
         response = self.guest_client.get(reverse("posts:index"))
         self.assertEqual(Post.objects.count(), posts_count - 1)
         self.assertIn(cache_content, response.content)
+        cache.clear()
+        response = self.guest_client.get(reverse("posts:index"))
+        content_cache_clear = response.content
+        self.assertNotEqual(cache_content, content_cache_clear)
 
 
 class FollowTest(TestCase):
