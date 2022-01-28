@@ -107,7 +107,15 @@ class Follow(CreatedModel):
         ordering = ("-created",)
         verbose_name = "Подписка"
         verbose_name_plural = "Подписки"
-        unique_together = ("author", "user")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "author"], name="unique_relationships"
+            ),
+            models.CheckConstraint(
+                name="prevent_self_follow",
+                check=~models.Q(user=models.F("author")),
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.user} подписан на {self.author}"

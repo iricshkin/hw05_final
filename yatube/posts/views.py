@@ -140,9 +140,7 @@ def follow_index(request: HttpRequest) -> HttpResponse:
     """
     Страница всех постов авторов, на которых подписан текущий пользователь.
     """
-    current_user = get_object_or_404(User, username=request.user)
-    author = Follow.objects.filter(user=current_user).values("author")
-    posts = Post.objects.filter(author__in=author)
+    posts = Post.objects.filter(author__following__user=request.user)
     paginator = Paginator(posts, POST_PER_PAGE)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
@@ -168,8 +166,7 @@ def profile_follow(request: HttpRequest, username: str) -> HttpResponse:
 def profile_unfollow(request: HttpRequest, username: str) -> HttpResponse:
     # Дизлайк, отписка
     current_user = request.user
-    author = get_object_or_404(User, username=username)
-    if author == current_user:
-        return redirect("posts:profile", username=username)
-    Follow.objects.get(user=current_user, author__username=author).delete()
+    Follow.objects.filter(
+        user=current_user, author__username=username
+    ).delete()
     return redirect("posts:profile", username=username)

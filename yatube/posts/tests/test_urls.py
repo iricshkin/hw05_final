@@ -13,14 +13,14 @@ class PostModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.user = User.objects.create_user(username="auth")
+        cls.author = User.objects.create_user(username="auth")
         cls.group = Group.objects.create(
             title="Тестовая группа",
             slug="test-slug",
             description="Тестовое описание",
         )
         cls.post = Post.objects.create(
-            author=cls.user,
+            author=cls.author,
             text="Текст поста",
         )
 
@@ -31,6 +31,9 @@ class PostModelTest(TestCase):
         self.user = User.objects.create_user(username="leo")
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        # Авторизируем автора поста
+        self.authorized_author = Client()
+        self.authorized_author.force_login(self.author)
 
     # Проверяем общедоступные страницы
     def test_pages_url_exists_at_desired_location(self):
@@ -63,8 +66,8 @@ class PostModelTest(TestCase):
     # Проверяем доступность страниц для авторизованного пользователя
     def test_post_url_exists_at_desired_location_authorized(self):
         """
-        Страницы create/, posts/<post_id>/edit/, posts/<int:post_id>/comment,
-        follow/ доступны авторизованному пользователю.
+        Страницы create/, posts/<int:post_id>/comment, follow/ доступны
+        авторизованному пользователю.
         """
         url_names = (
             reverse_lazy("posts:post_create"),
@@ -74,6 +77,15 @@ class PostModelTest(TestCase):
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
                 self.assertEqual(response.status_code, HTTPStatus.OK)
+
+    # Проверяем доступность страниц для авторизованного автора поста
+    def test_post_url_exists_at_post_author_authorized(self):
+        """
+        Страница posts/<post_id>/edit/ доступна авторизованному автору поста.
+        """
+        url = reverse_lazy("posts:post_edit", kwargs={"post_id": self.post.pk})
+        response = self.authorized_author.get(url)
+        self.assertEqual(response.status_code, HTTPStatus.OK)
 
     # Проверка вызываемых шаблонов для каждого адреса
     def test_urls_uses_correct_template(self):
@@ -96,3 +108,10 @@ class PostModelTest(TestCase):
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
                 self.assertTemplateUsed(response, template)
+
+    def test_urls_post_edit_uses_correct_template(self):
+        """URL-адрес post_edit использует соответствующий шаблон."""
+        url = reverse_lazy("posts:post_edit", kwargs={"post_id": self.post.pk})
+        template = "posts/create_post.html"
+        response = self.authorized_author.get(url)
+        self.assertTemplateUsed(response, template)

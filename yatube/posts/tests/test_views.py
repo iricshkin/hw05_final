@@ -7,6 +7,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import IntegrityError
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
@@ -89,6 +90,9 @@ class PostViewTest(TestCase):
         self.user = User.objects.create_user(username="leo")
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        # Авторизируем автора поста
+        self.authorized_author = Client()
+        self.authorized_author.force_login(self.user_1)
 
     # Проверяем используемые шаблоны
     def test_pages_uses_correct_template(self):
@@ -212,6 +216,21 @@ class PostViewTest(TestCase):
                 form_field = response.context["form"].fields[value]
                 # Проверяет, что поле формы является экземпляром
                 # указанного класса
+                self.assertIsInstance(form_field, expected)
+
+    def test_post_edit_page_show_correct_context(self):
+        """Шаблон post_edit сформирован с правильным контекстом."""
+        response = self.authorized_author.get(
+            reverse("posts:post_edit", kwargs={"post_id": "1"})
+        )
+        form_fields = {
+            "text": forms.fields.CharField,
+            "group": forms.models.ModelChoiceField,
+            "image": forms.fields.ImageField,
+        }
+        for value, expected in form_fields.items():
+            with self.subTest(value=value):
+                form_field = response.context["form"].fields[value]
                 self.assertIsInstance(form_field, expected)
 
     def test_post_with_group_and_image_show_prodile_pages(self):
@@ -357,11 +376,10 @@ class FollowTest(TestCase):
         self.client_author = Client()
         self.client_author.force_login(self.user_author)
 
-    def test_follow_and_unfollow_authorized_client(self):
+    def test_follow_authorized_client(self):
         """Авторизованный пользователь может подписываться на других
-        пользователей и удалять подписки.
+        пользователей.
         """
-        # Подписка
         follow_count = Follow.objects.count()
         response = self.client_user.post(
             reverse(
@@ -382,8 +400,18 @@ class FollowTest(TestCase):
             ).exists(),
             True,
         )
-        # Удаление подписки
+
+    def test_unfollow_authorized_client(self):
+        """Авторизованный пользователь может удалять подписки."""
+        # Подписка
+        response = self.client_user.post(
+            reverse(
+                "posts:profile_follow",
+                kwargs={"username": self.user_author.username},
+            )
+        )
         follow_count = Follow.objects.count()
+        # Удаление подписки
         response = self.client_user.post(
             reverse(
                 "posts:profile_unfollow",
@@ -418,3 +446,10 @@ class FollowTest(TestCase):
         self.client.login(username=self.user_unfollower)
         response = self.client.get(reverse("posts:follow_index"))
         self.assertNotEqual(post, response.context)
+
+    def test_no_self_follow(self):
+        constraint_name = "prevent_self_follow"
+        with self.assertRaisesMessage(IntegrityError, constraint_name):
+            Follow.objects.create(
+                user=self.user_follower, author=self.user_follower
+            )
