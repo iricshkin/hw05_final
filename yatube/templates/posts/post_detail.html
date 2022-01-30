@@ -1,11 +1,10 @@
 {% extends 'base.html' %}
-
 {% load thumbnail %}
-
 {% block title %}
   <title> {{ post_info|truncatechars:30 }} </title>
 {% endblock %} {% block content %}
 <main>
+  <div class="container">
   <div class="row">
     <aside class="col-12 col-md-3">
       <ul class="list-group list-group-flush">
@@ -50,5 +49,6 @@
       {% include "posts/includes/comment.html" %}
     </article>
   </div>
+</div>
 </main>
 {% endblock %}

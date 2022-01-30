@@ -1,12 +1,10 @@
 {% extends 'base.html' %} 
-
 {% load thumbnail %}
-
 {% block title %}
   <title> {{ group.title }}</title>
 {% endblock %} 
-
 {% block content %}
+<div class="container">
  <h1> {{ group.title }} </h1>
   <main>
     <p>{{ group.description }}</p>
@@ -24,14 +22,18 @@
            <img class="card-img my-2" src="{{ im.url }}">
         {% endthumbnail %}
         <p>{{ post.text|linebreaksbr }}</p>
+        <article>
         <a href="{% url 'posts:post_detail' post.pk %}">
           подробная информация
         </a>
+      </article>
+      <article>
         {% if post.group %}
          <a href="{% url 'posts:group_list' post.group.slug %}">
            все записи группы
           </a>
         {% endif %} 
+        </article>
       {% if not forloop.last %}
         <hr>
       {% endif %} 
@@ -41,5 +43,6 @@
        {% include "posts/includes/paginator.html" %}
       {% endif%}
       </hr>
+    </div>
   </main>
 {% endblock %}

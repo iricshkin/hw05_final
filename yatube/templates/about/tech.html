@@ -1,6 +1,9 @@
 {% extends "base.html" %}
-{% block title %}{{title}}{% endblock %}
+{% block title %}
+<title> {{ title }} </title>
+{% endblock %}
 {% block content %}
+<div class="container">
 {% comment %} Колонки с отступом сверху и снизу {% endcomment %}
 <div class="row">
   <h1>Вот что я умею</h1>
@@ -33,5 +36,6 @@
       сообщество нашей когорты.
     </p>
   </article>
+</div>
 </div>
 {% endblock %} 

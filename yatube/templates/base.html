@@ -30,7 +30,10 @@
     <meta name="msapplication-TileColor" content="#000" />
     <meta name="theme-color" content="#ffffff" />
     <!-- Подключен файл со стандартными стилями бустрап -->
-    <script src="{% static 'js/bootstrap.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/bootstrap.js' %}">
+    </script>
+    <script type="text/javascript" src="{% static 'js/bootstrap.js.map' %}">
+    </script>
     <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" />
     {% block title %} Что-то пошло не так :( {% endblock %}
   </head>

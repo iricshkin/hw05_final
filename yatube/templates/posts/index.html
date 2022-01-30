@@ -5,6 +5,7 @@
 {% endblock %} 
 {% block header %}Последние обновления на сайте{% endblock %}
 {%block content %}
+<div class="container">
 <h1>Последние обновления на сайте</h1>
 <main>
   {% cache 20 index_page page_obj.number %} 
@@ -20,5 +21,6 @@
   {% endfor %} 
   {% endcache %}
    {% include "posts/includes/paginator.html" %}
+</div>
 </main>
 {% endblock %}

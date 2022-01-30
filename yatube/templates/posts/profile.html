@@ -1,12 +1,10 @@
 {% extends 'base.html' %}
-
 {% load thumbnail %}
-
 {% block title %}
     <title>Профайл пользователя {{ author.get_full_name }}</title>
 {% endblock %}
-
-{% block content %}  
+{% block content %}
+<div class="container">
 <main>
     <h1>Все посты пользователя {{ author.get_full_name }}</h1>
         <h3>Всего постов: {{ posts_author.count }} </h3> 
@@ -36,11 +34,13 @@
             подробная информация
           </a>
         </article>
+        <article>
         {% if posts_author.group %}
         <a href="{% url 'posts:group_list' posts_author.group.slug %}">
           все записи группы
         </a>
         {% endif %}
+         </article>
         {% if not forloop.last %} 
         <hr>
         {% endif %} 
@@ -50,5 +50,6 @@
          {% include "posts/includes/paginator.html" %}
         {% endif %}
         </hr>
+      </div>
     </main>
 {% endblock %}
