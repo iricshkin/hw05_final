@@ -31,8 +31,6 @@ ALLOWED_HOSTS = [
     "testserver",
     "www.iricshkin.pythonanywhere.com",
     "iricshkin.pythonanywhere.com",
-    "www.Iricshkin.pythonanywhere.com",
-    "Iricshkin.pythonanywhere.com",
 ]
 
 INTERNAL_IPS = [

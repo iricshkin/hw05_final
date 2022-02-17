@@ -23,19 +23,23 @@ class PostHome(ListView):
         return Post.objects.all()
 
 
-def group_posts(request: HttpRequest, slug: str) -> HttpResponse:
+class GroupPosts(ListView):
     """Страница группы."""
-    group = get_object_or_404(Group, slug=slug)
-    post_list = group.posts.all()
-    paginator = Paginator(post_list, POST_PER_PAGE)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-    template = "posts/group_list.html"
-    context = {
-        "group": group,
-        "page_obj": page_obj,
-    }
-    return render(request, template, context)
+
+    paginate_by = POST_PER_PAGE
+    model = Post
+    template_name = "posts/group_list.html"
+    context_object_name = "posts"
+
+    def get_queryset(self):
+        group = get_object_or_404(Group, slug=self.kwargs["slug"])
+        return Post.objects.filter(group=group)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["title"] = str(context["posts"][0].group)
+        context["description"] = context["posts"][0].group.description
+        return context
 
 
 def profile(request: HttpRequest, username: str) -> HttpResponse:

@@ -6,7 +6,7 @@ app_name = "posts"
 
 urlpatterns = [
     path("", views.PostHome.as_view(), name="index"),
-    path("group/<slug:slug>/", views.group_posts, name="group_list"),
+    path("group/<slug:slug>/", views.GroupPosts.as_view(), name="group_list"),
     path("profile/<str:username>/", views.profile, name="profile"),
     path("posts/<int:post_id>/", views.post_detail, name="post_detail"),
     path("create/", views.post_create, name="post_create"),
