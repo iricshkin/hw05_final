@@ -137,7 +137,10 @@ USE_TZ = False
 
 STATIC_URL = "/static/"
 
-STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
+STATICFILES_DIRS = [os.path.join(BASE_DIR, "yatube", "static")]
+STATIC_ROOT = os.path.join(
+    BASE_DIR, 'static/'
+)  # папка, в которой будет лежать статика
 
 LOGIN_URL = "users:login"
 LOGIN_REDIRECT_URL = "posts:index"

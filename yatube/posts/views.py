@@ -27,7 +27,7 @@ class GroupPosts(ListView):
     """Страница группы."""
 
     paginate_by = POST_PER_PAGE
-    model = Post
+    model = Group
     template_name = "posts/group_list.html"
     context_object_name = "posts"
 
